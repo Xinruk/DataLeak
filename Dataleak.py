@@ -3,6 +3,8 @@ import configparser
 import time
 from argparse import ArgumentParser, SUPPRESS
 import sys
+import pandas as pd
+from requests.api import head
 
 BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, END ,WARNING = '\33[94m', '\033[91m', '\33[97m', '\33[93m', '\033[1;35m', '\033[1;32m', '\033[0m', '\033[93m'
 
@@ -33,18 +35,26 @@ def webCrawler(domainName):
     regex = r"[A-Za-z0-9\.\-+_]+@%s" % domainName
 
     driver = webdriver.Firefox()
+
+    result = {}
+
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
         input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
         input_element.submit()
-        time.sleep(2)
+        time.sleep(2) # pourquoi sleep 2 secondes ?
         
         html = driver.page_source
         print(item[0])
         ## Faire comme bs4 avec selenium . l'idee est de passer a parsingGDorks un tableau de page
         # nextPageLink = soup.find("a", id="pnnext").get("href").click()
-        parsingGDorks(html, regex)
+        result[item[0]] = parsingGDorks(html, regex)
+    #dataframe the results
+    df = pd.DataFrame.from_dict(data=result, orient='index').transpose()
+    df.to_csv('dataleak.csv') # export to csv
+    
+    print(result)
         
         
 
@@ -67,8 +77,10 @@ def parsingGDorks(pageData, regex):
         mails.update(new_mails)
     if mails != set():
         print(mails)
+        return mails
     else:
         print("None")
+        return {"None"}
         # nextPageLink = soup.find("a", id="pnnext").get("href")
         # pageData = requests.get(nextPageLink).text
 
