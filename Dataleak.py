@@ -45,8 +45,7 @@ def webCrawler(domainName):
         ## Faire comme bs4 avec selenium . l'idee est de passer a parsingGDorks un tableau de page
         # nextPageLink = soup.find("a", id="pnnext").get("href").click()
         mails = parsingGDorks(html, regex)
-        results.update({item[0]:mails})
-        
+        results.update({item[0]:mails})        
         
 
 
