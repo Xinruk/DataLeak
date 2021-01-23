@@ -26,7 +26,7 @@ def webCrawler(domainName):
     from selenium import webdriver
     from selenium.webdriver.support.ui import Select
 
-
+    results = {}
     fancyDisplay("Domain name : %s \n" % domainName)
     # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
@@ -44,7 +44,8 @@ def webCrawler(domainName):
         print(item[0])
         ## Faire comme bs4 avec selenium . l'idee est de passer a parsingGDorks un tableau de page
         # nextPageLink = soup.find("a", id="pnnext").get("href").click()
-        parsingGDorks(html, regex)
+        mails = parsingGDorks(html, regex)
+        results.update({item[0]:mails})
         
         
 
@@ -67,8 +68,10 @@ def parsingGDorks(pageData, regex):
         mails.update(new_mails)
     if mails != set():
         print(mails)
+        return mails
     else:
         print("None")
+        return None
         # nextPageLink = soup.find("a", id="pnnext").get("href")
         # pageData = requests.get(nextPageLink).text
 
