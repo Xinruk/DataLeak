@@ -30,13 +30,13 @@ def webCrawler(domainName):
     fancyDisplay("Domain name : %s \n" % domainName)
     # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
-    regex = r"[a-z0-9\.\-+_]+@%s" % domainName
+    regex = r"[A-Za-z0-9\.\-+_]+@%s" % domainName
 
     driver = webdriver.Firefox()
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
-        input_element.send_keys("site:%s intext:%s" % (item[1], domainName))
+        input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
         input_element.submit()
         time.sleep(2)
         
@@ -55,20 +55,20 @@ def parsingGDorks(pageData, regex):
     import re
     mails = set()
     ## Mettre ne place un for page in page Array
-    nextPageLink = "1"
-    while nextPageLink != None:
-        soup = bs.BeautifulSoup(pageData, "html.parser")
-        links = soup.find_all("div", {"class": "yuRUbf"})
-        for link in links:
-            url = link.find("a").get("href")
-            linkData = requests.get(url)
-            linkData = linkData.text
-            new_mails = set(re.findall(regex, linkData))
-            mails.update(new_mails)
-        if mails != set():
-            print(mails)
-        else:
-            print("None")
+    # nextPageLink = "1"
+    # while nextPageLink != None:
+    soup = bs.BeautifulSoup(pageData, "html.parser")
+    links = soup.find_all("div", {"class": "yuRUbf"})
+    for link in links:
+        url = link.find("a").get("href")
+        linkData = requests.get(url)
+        linkData = linkData.text
+        new_mails = set(re.findall(regex, linkData))
+        mails.update(new_mails)
+    if mails != set():
+        print(mails)
+    else:
+        print("None")
         # nextPageLink = soup.find("a", id="pnnext").get("href")
         # pageData = requests.get(nextPageLink).text
 
