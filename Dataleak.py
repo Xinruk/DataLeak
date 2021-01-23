@@ -1,5 +1,4 @@
 import requests
-# import beautifulsoup4 as bs 
 import configparser
 import time
 from argparse import ArgumentParser, SUPPRESS
@@ -15,7 +14,7 @@ def fancyDisplay(buffer, color = WHITE):
         time.sleep(0.02)
     sys.stdout.write(WHITE)
 
-def webParser(domainName):
+def webScraper(domainName):
     fancyDisplay("Domain name : %s" % domainName)
     for item in Config.items("API"):
         # if item[0] != "pastebin" and item[1] != "KEY":
@@ -23,22 +22,58 @@ def webParser(domainName):
         pass
         
 
-def webScrapper(domainName):
+def webCrawler(domainName):
     from selenium import webdriver
     from selenium.webdriver.support.ui import Select
 
 
     fancyDisplay("Domain name : %s \n" % domainName)
+    # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
+    # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
+    regex = r"[A-Za-z0-9\.\-+_]+@%s" % domainName
 
     driver = webdriver.Firefox()
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
-        input_element.send_keys("site:%s intext:%s" % (item[1], domainName))
+        input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
         input_element.submit()
+        time.sleep(2)
         
-        # link.click()
-        # sourcecode.search([@mail])
+        html = driver.page_source
+        print(item[0])
+        ## Faire comme bs4 avec selenium . l'idee est de passer a parsingGDorks un tableau de page
+        # nextPageLink = soup.find("a", id="pnnext").get("href").click()
+        parsingGDorks(html, regex)
+        
+        
+
+
+        
+def parsingGDorks(pageData, regex):
+    import bs4 as bs
+    import re
+    mails = set()
+    ## Mettre ne place un for page in page Array
+    # nextPageLink = "1"
+    # while nextPageLink != None:
+    soup = bs.BeautifulSoup(pageData, "html.parser")
+    links = soup.find_all("div", {"class": "yuRUbf"})
+    for link in links:
+        url = link.find("a").get("href")
+        linkData = requests.get(url)
+        linkData = linkData.text
+        new_mails = set(re.findall(regex, linkData))
+        mails.update(new_mails)
+    if mails != set():
+        print(mails)
+    else:
+        print("None")
+        # nextPageLink = soup.find("a", id="pnnext").get("href")
+        # pageData = requests.get(nextPageLink).text
+
+    
+
     
 
 if __name__ == '__main__':
@@ -83,10 +118,11 @@ if __name__ == '__main__':
             fancyDisplay("%s: %s \n" % (item[0], item[1]), WHITE)
 
     elif args.parsing and args.domainName != None:
-        webParser(args.domainName)
+        webScraper(args.domainName)
 
     elif args.scraping and args.domainName != None:
-        webScrapper(args.domainName)
+        webCrawler(args.domainName)
+
     
     else:
         parser.print_help()
