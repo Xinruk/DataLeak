@@ -32,7 +32,7 @@ def webCrawler(domainName):
     fancyDisplay("Domain name : %s \n" % domainName)
     # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
-    regex = r"[A-Za-z0-9\.\-+_]+@%s" % domainName
+    regex = r"[\w\-.]+[\w]+@[\w.]*%s" % domainName
 
     driver = webdriver.Firefox()
 
