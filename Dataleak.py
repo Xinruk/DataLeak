@@ -25,38 +25,53 @@ def webScraper(domainName):
 def webCrawler(domainName):
     from selenium import webdriver
     from selenium.webdriver.support.ui import Select
+    from selenium.common.exceptions import NoSuchElementException
+    from selenium.webdriver.common.proxy import Proxy, ProxyType
 
     results = {}
+    
     fancyDisplay("Domain name : %s \n" % domainName)
     # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
-    regex = r"[A-Za-z0-9\.\-+_]+@%s" % domainName
+    regex = r"[A-Za-z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]*%s" % domainName
 
-    driver = webdriver.Firefox()
+    # Proxy settings : pour la discretion (ne fonctionne pas mais nest pas bloquant)
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference("network.proxy.type", 1)
+    profile.set_preference("network.proxy.http", "62.171.144.29")
+    profile.set_preference("network.proxy.http_port", 3128)
+    profile.update_preferences()
+    driver = webdriver.Firefox(firefox_profile = profile)
+
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
         input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
         input_element.submit()
         time.sleep(2)
-        
-        html = driver.page_source
         print(item[0])
-        ## Faire comme bs4 avec selenium . l'idee est de passer a parsingGDorks un tableau de page
-        # nextPageLink = soup.find("a", id="pnnext").get("href").click()
-        mails = parsingGDorks(html, regex)
-        results.update({item[0]:mails})        
+        mails = set()
+        nextPageLink = "1"
+        while nextPageLink != None:
+            html = driver.page_source
+            new_mails = parsingGDorks(html, regex)
+            if new_mails != None:
+                mails.update(new_mails)
+                
+            try:
+                nextPageLink = driver.find_element_by_xpath("//*[@id='pnnext']").get_attribute("href")
+                driver.get(nextPageLink)
+            except NoSuchElementException:
+                nextPageLink = None
+        results.update({item[0]:mails})
+        print(results)
+            
         
-
-
         
 def parsingGDorks(pageData, regex):
     import bs4 as bs
     import re
     mails = set()
-    ## Mettre ne place un for page in page Array
-    # nextPageLink = "1"
-    # while nextPageLink != None:
     soup = bs.BeautifulSoup(pageData, "html.parser")
     links = soup.find_all("div", {"class": "yuRUbf"})
     for link in links:
@@ -66,16 +81,9 @@ def parsingGDorks(pageData, regex):
         new_mails = set(re.findall(regex, linkData))
         mails.update(new_mails)
     if mails != set():
-        print(mails)
         return mails
     else:
-        print("None")
         return None
-        # nextPageLink = soup.find("a", id="pnnext").get("href")
-        # pageData = requests.get(nextPageLink).text
-
-    
-
     
 
 if __name__ == '__main__':
@@ -90,7 +98,11 @@ if __name__ == '__main__':
 """)
     Config = configparser.ConfigParser()
     Config.read("config.ini")
-
+    # Add dynamic proxies . config.item("").append(proxie)
+    for item in Config.items("PROXIES"):
+        if item[1] == "{}":
+            fancyDisplay("Warning: no proxies are set for %s \n" % item[0], RED)            
+        
 
     parser = ArgumentParser(add_help=False)
     required = parser.add_argument_group('required arguments')
@@ -107,6 +119,7 @@ if __name__ == '__main__':
 
     optional.add_argument("-s", "--scraping", default = None, action = "store_true",
                     help = "Use scrapping method")
+    
             
     optional.add_argument("--api", default = None, action = "store_true",
                     help = "List set API")
