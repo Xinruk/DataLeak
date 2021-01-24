@@ -1,8 +1,11 @@
+from bs4.element import PreformattedString
 import requests
 import configparser
 import time
 from argparse import ArgumentParser, SUPPRESS
 import sys
+import pandas as pd
+import random
 
 BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, END ,WARNING = '\33[94m', '\033[91m', '\33[97m', '\33[93m', '\033[1;35m', '\033[1;32m', '\033[0m', '\033[93m'
 
@@ -24,9 +27,7 @@ def webScraper(domainName):
 
 def webCrawler(domainName):
     from selenium import webdriver
-    from selenium.webdriver.support.ui import Select
     from selenium.common.exceptions import NoSuchElementException
-    from selenium.webdriver.common.proxy import Proxy, ProxyType
 
     results = {}
     
@@ -35,20 +36,25 @@ def webCrawler(domainName):
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
     regex = r"[A-Za-z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]*%s" % domainName
 
-    # Proxy settings : pour la discretion (ne fonctionne pas mais nest pas bloquant)
-    profile = webdriver.FirefoxProfile()
-    profile.set_preference("network.proxy.type", 1)
-    profile.set_preference("network.proxy.http", "62.171.144.29")
-    profile.set_preference("network.proxy.http_port", 3128)
-    profile.update_preferences()
-    driver = webdriver.Firefox(firefox_profile = profile)
+    # PROXY = "51.75.195.37:8888"
+    # webdriver.DesiredCapabilities.FIREFOX['proxy'] = {
+    #     "httpProxy": PROXY,
+    #     "ftpProxy": PROXY,
+    #     "sslProxy": PROXY,
+    #     "proxyType": "MANUAL",
+    # }
+    driver = webdriver.Firefox()
 
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
-        input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
-        input_element.submit()
+        # input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
+        address = "site:%s intext:@%s" % (item[1], domainName)
+        for letter in address:
+            time.sleep(random.randint(0, 1))
+            input_element.send_keys(letter)
         time.sleep(2)
+        input_element.submit()
         print(item[0])
         mails = set()
         nextPageLink = "1"
@@ -60,12 +66,14 @@ def webCrawler(domainName):
                 
             try:
                 nextPageLink = driver.find_element_by_xpath("//*[@id='pnnext']").get_attribute("href")
+                time.sleep(40)
                 driver.get(nextPageLink)
             except NoSuchElementException:
                 nextPageLink = None
         results.update({item[0]:mails})
-        print(results)
-            
+    df = pd.DataFrame.from_dict(data=results, orient='index').transpose()
+    df.info()
+    df.to_csv('dataleak.csv') # export to csv
         
         
 def parsingGDorks(pageData, regex):
@@ -99,9 +107,9 @@ if __name__ == '__main__':
     Config = configparser.ConfigParser()
     Config.read("config.ini")
     # Add dynamic proxies . config.item("").append(proxie)
-    for item in Config.items("PROXIES"):
-        if item[1] == "{}":
-            fancyDisplay("Warning: no proxies are set for %s \n" % item[0], RED)            
+    # for item in Config.items("PROXIES"):
+    #     if item[1] == "{}":
+    #         fancyDisplay("Warning: no proxies are set for %s \n" % item[0], RED)            
         
 
     parser = ArgumentParser(add_help=False)

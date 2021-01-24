@@ -2,3 +2,6 @@ geckodriver.log
 .vs/DataLeak/v16/.suo
 .vs/slnx.sqlite
 .vs/DataLeak/v16/.suo
+visu.py
+dataleak.csv
+.gitignore
