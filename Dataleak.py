@@ -1,3 +1,4 @@
+import re
 from bs4.element import PreformattedString
 import requests
 import configparser
@@ -6,6 +7,7 @@ from argparse import ArgumentParser, SUPPRESS
 import sys
 import pandas as pd
 import random
+import matplotlib.pyplot as plt
 
 BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, END ,WARNING = '\33[94m', '\033[91m', '\33[97m', '\33[93m', '\033[1;35m', '\033[1;32m', '\033[0m', '\033[93m'
 
@@ -36,25 +38,24 @@ def webCrawler(domainName):
     # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
     regex = r"[A-Za-z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]*%s" % domainName
 
-    # PROXY = "51.75.195.37:8888"
-    # webdriver.DesiredCapabilities.FIREFOX['proxy'] = {
-    #     "httpProxy": PROXY,
-    #     "ftpProxy": PROXY,
-    #     "sslProxy": PROXY,
-    #     "proxyType": "MANUAL",
-    # }
+    PROXY = "51.75.195.37:8888"
+    webdriver.DesiredCapabilities.FIREFOX['proxy'] = {
+        "httpProxy": PROXY,
+        "ftpProxy": PROXY,
+        "sslProxy": PROXY,
+        "proxyType": "MANUAL",
+    }
     driver = webdriver.Firefox()
 
     for item in Config.items("SITE"):
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
-        # input_element.send_keys("site:%s intext:@%s" % (item[1], domainName))
         address = "site:%s intext:@%s" % (item[1], domainName)
         for letter in address:
             time.sleep(random.randint(0, 1))
             input_element.send_keys(letter)
-        time.sleep(2)
         input_element.submit()
+        time.sleep(2)
         print(item[0])
         mails = set()
         nextPageLink = "1"
@@ -71,14 +72,11 @@ def webCrawler(domainName):
             except NoSuchElementException:
                 nextPageLink = None
         results.update({item[0]:mails})
-    df = pd.DataFrame.from_dict(data=results, orient='index').transpose()
-    df.info()
-    df.to_csv('dataleak.csv') # export to csv
+    dataVisu(results)
         
         
 def parsingGDorks(pageData, regex):
     import bs4 as bs
-    import re
     mails = set()
     soup = bs.BeautifulSoup(pageData, "html.parser")
     links = soup.find_all("div", {"class": "yuRUbf"})
@@ -93,6 +91,13 @@ def parsingGDorks(pageData, regex):
     else:
         return None
     
+def dataVisu(results):
+    df = pd.DataFrame.from_dict(data=results, orient='index').transpose()
+    df.to_csv('dataleak.csv') # export to csv
+    df = pd.DataFrame({'Nb of leaked mail': [df.shape[0] - df['github'].isnull().sum(), df.shape[0] - df['pastebin'].isnull().sum()]},
+    index=['Github', 'Pastebin'])
+    plot = df.plot.pie(y='Nb of leaked mail', figsize=(5, 5))
+    plt.show()
 
 if __name__ == '__main__':
     sys.stdout.write(RED + """
@@ -149,4 +154,3 @@ if __name__ == '__main__':
     
     else:
         parser.print_help()
-
