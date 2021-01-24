@@ -22,32 +22,30 @@ def fancyDisplay(buffer, color = WHITE):
 def webScraper(domainName):
     fancyDisplay("Domain name : %s" % domainName)
     for item in Config.items("API"):
-        # if item[0] != "pastebin" and item[1] != "KEY":
-        #     requests.get("https://scrape.pastebin.com/api_scrape_item.php?i=@domainName")
         pass
         
 
-def webCrawler(domainName):
+def webCrawler(domainName, proxy_web):
     from selenium import webdriver
     from selenium.common.exceptions import NoSuchElementException
 
     results = {}
     
     fancyDisplay("Domain name : %s \n" % domainName)
-    # regex = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@%s$" % domainName
-    # regex = "^[a-zA-Z0-9_.+-]+@(?:(?:[a-zA-Z0-9-]+\.)?[a-zA-Z]+\.)?(domain|domain2)\.com$" 
-    regex = r"[A-Za-z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]*%s" % domainName
 
-    PROXY = "51.75.195.37:8888"
-    webdriver.DesiredCapabilities.FIREFOX['proxy'] = {
-        "httpProxy": PROXY,
-        "ftpProxy": PROXY,
-        "sslProxy": PROXY,
-        "proxyType": "MANUAL",
-    }
-    driver = webdriver.Firefox()
+    regex = r"[A-Za-z0-9\.\-+_]+@[A-Za-z0-9\.\-+_]*%s" % domainName
+    proxy_index = 0
+    PROXY = ["99.192.170.250:80", "51.75.195.37:8888", "62.171.144.29:3128"]
+    # 
 
     for item in Config.items("SITE"):
+        webdriver.DesiredCapabilities.FIREFOX['proxy'] = {
+        "httpProxy": PROXY[proxy_index],
+        "ftpProxy": PROXY[proxy_index],
+        "sslProxy": PROXY[proxy_index],
+        "proxyType": "MANUAL",
+        }
+        driver = webdriver.Firefox()
         driver.get("https://www.google.com")
         input_element = driver.find_element_by_name("q")
         address = "site:%s intext:@%s" % (item[1], domainName)
@@ -72,6 +70,11 @@ def webCrawler(domainName):
             except NoSuchElementException:
                 nextPageLink = None
         results.update({item[0]:mails})
+        if proxy_index < 3 :
+            proxy_index += 1
+        else:
+            proxy_index = 0
+        driver.close()
     dataVisu(results)
         
         
@@ -111,10 +114,13 @@ if __name__ == '__main__':
 """)
     Config = configparser.ConfigParser()
     Config.read("config.ini")
-    # Add dynamic proxies . config.item("").append(proxie)
-    # for item in Config.items("PROXIES"):
-    #     if item[1] == "{}":
-    #         fancyDisplay("Warning: no proxies are set for %s \n" % item[0], RED)            
+    proxy_web = {}
+    for item in Config.items("PROXIES"):
+        if item[1] == "{}":
+            fancyDisplay("Warning: no proxies are set for %s \n" % item[0], RED)
+        # if item[0] == "web":
+        #     proxy_web = item[1]
+  
         
 
     parser = ArgumentParser(add_help=False)
@@ -149,7 +155,7 @@ if __name__ == '__main__':
         webScraper(args.domainName)
 
     elif args.scraping and args.domainName != None:
-        webCrawler(args.domainName)
+        webCrawler(args.domainName, proxy_web)
 
     
     else:
